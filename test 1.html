@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Klocka och Väder i Tranås">
+    <title>Klocka och Väder i Tranås</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a; /* Fallback för bakgrund om bilden inte kan laddas */
+            --text-color: #ff0000; /* Röd textfärg */
+        }
+
+        body {
+            background-color: var(--bg-color); /* Fallback för bakgrund */
+            background-image: url('easter.png'); /* Sätt sofa.png som bakgrund */
+            background-size: cover; /* Gör så att bakgrundsbilden täcker hela sidan */
+            background-position: center center; /* Centrerar bakgrundsbilden */
+            background-repeat: no-repeat; /* Förhindrar upprepning av bakgrundsbilden */
+            color: var(--text-color);
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: flex-start; /* Placera innehåll till vänster */
+            align-items: flex-start; /* Placera innehåll högre upp */
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.5s, color 0.5s;
+            flex-direction: column;
+            gap: 20px;
+            padding-top: 20px; /* Lägg till lite avstånd från toppen */
+            padding-left: 20px; /* Lägg till lite avstånd från vänster */
+            overflow: hidden;
+            position: relative;
+        }
+
+        .clock {
+            font-size: 12em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--text-color); /* Röd textfärg */
+        }
+
+        .weather {
+            font-size: 3em;
+            color: var(--text-color); /* Röd textfärg */
+        }
+
+        .date {
+            font-size: 2.5em;
+            margin-top: 40px;
+            color: var(--text-color); /* Röd textfärg */
+        }
+
+        .countdown {
+            position: absolute;
+            top: 0;
+            left: 100%;
+            white-space: nowrap;
+            font-size: 2.5em;
+            color: var(--text-color); /* Röd textfärg för nedräkningen */
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            animation: scroll-left 40s linear infinite;
+        }
+
+        @keyframes scroll-left {
+            0% { left: 100%; }
+            100% { left: -100%; }
+        }
+
+        /* Bildcontainer för gif i nedre högra hörnet */
+        .image-container {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 400px; /* Justera bildens storlek */
+            height: 400px; /* Justera bildens storlek */
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media screen and (max-width: 600px) {
+            .clock {
+                font-size: 8em;
+            }
+            .weather, .date {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div>
+        <div class="date" id="date"></div>
+        <div class="weather" id="weather"></div>
+        <div class="clock" id="clock"></div>
+    </div>
+
+    <div class="countdown" id="countdown">Tid kvar till Påsk: 100 dagar 4 timmar</div>
+
+    <!-- Bilden i nedre högra hörnet -->
+    <div class="image-container">
+        <img src="arg.gif" alt="Arg bild">
+    </div>
+
+    <script>
+        let backgroundChangeTime = null;
+        let cachedWeather = null;
+
+        // Funktion för att uppdatera klockan
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            let seconds = now.getSeconds();
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            document.getElementById('clock').textContent = hours + ':' + minutes + ':' + seconds;
+
+            const daysOfWeek = ["Söndag", "Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag"];
+            const monthsOfYear = ["Januari", "Februari", "Mars", "April", "Maj", "Juni", "Juli", "Augusti", "September", "Oktober", "November", "December"];
+
+            const dayOfWeek = daysOfWeek[now.getDay()];
+            const dayOfMonth = now.getDate();
+            const month = monthsOfYear[now.getMonth()];
+            const year = now.getFullYear();
+
+            document.getElementById('date').textContent = `${dayOfWeek} ${dayOfMonth} ${month}`;
+
+            if ((hours === 11 || hours === 13 || hours === 15 || hours === 17) && minutes === 0 && seconds === 0) {
+                backgroundChangeTime = new Date();
+                document.body.style.backgroundColor = 'red';
+                document.body.style.color = 'black';
+            }
+
+            if (backgroundChangeTime !== null) {
+                const timePassed = new Date() - backgroundChangeTime;
+                if (timePassed <= 5 * 60 * 1000) {
+                    document.body.style.backgroundColor = 'red';
+                    document.body.style.color = 'black';
+                } else {
+                    document.body.style.backgroundColor = '#1a1a1a';
+                    document.body.style.color = '#ff0000'; /* Röd textfärg */
+                    backgroundChangeTime = null;
+                }
+            }
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Funktion för att hämta vädret i Tranås
+        async function fetchWeather() {
+            const apiKey = 'b24fe686852f9fa9c8b13873f2b25761';
+            const city = 'Tranås,SE';
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&lang=sv&appid=${apiKey}`;
+
+            if (cachedWeather && (new Date() - cachedWeather.timestamp) < 60000) {
+                document.getElementById('weather').textContent = `Väder i Tranås: ${cachedWeather.temperature}°C, ${cachedWeather.description}`;
+                return;
+            }
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Nätverksfel: ' + response.status);
+                const data = await response.json();
+                const temperature = data.main.temp.toFixed(1);
+                const description = data.weather[0].description;
+
+                cachedWeather = { temperature, description, timestamp: new Date() };
+                document.getElementById('weather').textContent = `Väder i Tranås: ${temperature}°C, ${description}`;
+            } catch (error) {
+                console.error('Fel vid hämtning av vädret:', error);
+                document.getElementById('weather').textContent = 'Kunde inte hämta vädret: ' + error.message;
+            }
+        }
+
+        fetchWeather();
+        setInterval(fetchWeather, 60 * 1000);
+
+        // Funktion för att uppdatera nedräkningen till Påsk
+        function updateCountdown() {
+            const now = new Date();
+            const easterSunday = new Date('April 20, 2025 00:00:00'); // Påskdagen 2025
+            const timeLeft = easterSunday - now;
+
+            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+            const countdownText = `Tid kvar till Påsk: ${days} dagar ${hours} timmar ${minutes} minuter ${seconds} sekunder`;
+            document.getElementById('countdown').textContent = countdownText;
+        }
+
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+
+</body>
+</html>
